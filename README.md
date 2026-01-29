@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Restaurant App
 
-## Getting Started
+## Architecture
 
-First, run the development server:
+This project follows **Clean Architecture** (Robert C. Martin) adapted for **Next.js/React**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### Dependency Rule
+
+> Source code dependencies can only point **inward**. Nothing in an inner circle can know anything about something in an outer circle.
+
+```
+domain/ → imports NOTHING
+application/ → imports ONLY domain/
+infrastructure/ → imports domain/ + application/
+presentation/ → imports domain/ + application/ + infrastructure/
+app/ (Next.js) → imports presentation/ + ioc/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Layers
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Layer (inner → outer) | Role | Examples |
+|---|---|---|
+| **Entities** (`domain/`) | Core business rules, most stable | `MenuItem`, `Order`, `Money` |
+| **Use Cases** (`application/`) | Application-specific business logic | `CreateOrder`, `CalculateTotal` |
+| **Interface Adapters** (`infrastructure/` + `presentation/`) | Convert data between internal/external formats | Mappers, Repositories impl, ViewModels |
+| **Frameworks & Drivers** (`app/`) | Framework, DB, UI, API client | Next.js, React, fetch, Zustand |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Folder Structure
 
-## Learn More
+```
+src/
+├── app/                          # Next.js App Router (Frameworks & Drivers)
+│   ├── (public)/                 # Route group: home, menu
+│   ├── (auth)/                   # Route group: login, register
+│   ├── (dashboard)/              # Route group: admin pages
+│   ├── layout.tsx
+│   └── globals.css
+│
+├── core/                         # Cross-cutting concerns
+│   ├── config/                   # Environment, constants
+│   └── logger/                   # Logging
+│
+├── domain/                       # ENTITIES LAYER (innermost - NO dependencies)
+│   ├── models/                   # Business entities (pure TypeScript classes)
+│   │   ├── menu-item.ts
+│   │   ├── order.ts
+│   │   └── reservation.ts
+│   ├── repositories/             # Repository INTERFACES (Ports)
+│   │   ├── menu.repository.ts
+│   │   └── order.repository.ts
+│   ├── value-objects/            # Value objects (Money, Address...)
+│   └── errors/                   # Domain-specific errors
+│
+├── application/                  # USE CASES LAYER
+│   ├── use-cases/                # Application-specific business logic
+│   │   ├── menu/
+│   │   │   ├── get-menu.use-case.ts
+│   │   │   └── search-menu.use-case.ts
+│   │   ├── order/
+│   │   │   ├── create-order.use-case.ts
+│   │   │   └── calculate-total.use-case.ts
+│   │   └── reservation/
+│   │       └── create-reservation.use-case.ts
+│   ├── ports/                    # Input/Output port interfaces
+│   └── dtos/                     # Data Transfer Objects
+│
+├── infrastructure/               # INTERFACE ADAPTERS + FRAMEWORKS & DRIVERS
+│   ├── repositories/             # Repository IMPLEMENTATIONS (Adapters)
+│   │   ├── api-menu.repository.ts
+│   │   └── api-order.repository.ts
+│   ├── api/                      # HTTP client, interceptors
+│   │   └── http-client.ts
+│   ├── mappers/                  # Data <-> Domain mappers
+│   │   ├── menu.mapper.ts
+│   │   └── order.mapper.ts
+│   └── storage/                  # LocalStorage, cookies adapters
+│
+├── presentation/                 # INTERFACE ADAPTERS (UI side)
+│   ├── components/               # React components
+│   │   ├── ui/                   # shadcn/ui primitives
+│   │   ├── layouts/              # Header, Sidebar, Footer
+│   │   └── shared/               # Reusable business components
+│   ├── hooks/                    # Custom React hooks
+│   ├── providers/                # Context providers
+│   ├── stores/                   # State management (Zustand/Redux)
+│   └── view-models/              # Presenters / ViewModels
+│
+├── ioc/                          # Dependency Injection container
+│   └── container.ts              # Wire dependencies together
+│
+└── lib/                          # Shared utilities
+    └── utils.ts
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Key Principles
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **Pure Domain Layer** - No imports from React, Next.js, or any framework
+2. **Dependency Inversion** - Interfaces (Ports) in `domain/`, implementations (Adapters) in `infrastructure/`
+3. **Use Cases** - Separate business logic from UI
+4. **IoC Container** - Wire dependencies at composition root (`ioc/`)
+5. **ESLint Rules** - Can enforce the dependency rule automatically
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Data Flow
 
-## Deploy on Vercel
+```
+app/ (route) → presentation/ (component + hook)
+  → application/ (use case)
+    → domain/ (entity + repository interface)
+      ← infrastructure/ (repository implementation + API call)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### References
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [The Clean Architecture - Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+- [Clean Architecture in Frontend - Feature-Sliced Design](https://feature-sliced.design/blog/frontend-clean-architecture)
+- [Clean Architecture Next.js Boilerplate](https://github.com/Melzar/clean-architecture-nextjs-react-boilerplate)
