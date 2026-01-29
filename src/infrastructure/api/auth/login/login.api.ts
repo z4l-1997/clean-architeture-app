@@ -1,27 +1,21 @@
 import { LoginEntity, LoginSchema } from "@/domain/entities/login.entity";
 import {
   AuthTokenEntity,
+  LoginResponse,
   LoginResponseSchema,
 } from "@/domain/entities/auth-token.entity";
-import { envConfig } from "@/infrastructure/config/env.config";
+import { HttpClientPort } from "@/application/ports/http-client.port";
 
-export async function loginApi(data: LoginEntity): Promise<AuthTokenEntity> {
-  const parsed = LoginSchema.parse(data);
-
-  const response = await fetch(`${envConfig.API_BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify(parsed),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Login failed: ${response.status}`);
-  }
-
-  const json = await response.json();
-  const result = LoginResponseSchema.parse(json);
-  return result.data;
+export function createLoginApi(httpClient: HttpClientPort) {
+  return async function loginApi(
+    data: LoginEntity,
+  ): Promise<AuthTokenEntity> {
+    const parsed = LoginSchema.parse(data);
+    const json = await httpClient.request<LoginResponse>("/auth/login", {
+      method: "POST",
+      body: parsed,
+    });
+    const result = LoginResponseSchema.parse(json);
+    return result.data;
+  };
 }

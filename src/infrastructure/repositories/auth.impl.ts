@@ -1,6 +1,9 @@
 import { AuthRepository } from "@/domain/repositories/auth.repository";
-import { loginApi } from "@/infrastructure/api/auth/login/login.api";
+import { HttpClientPort } from "@/application/ports/http-client.port";
+import { createLoginApi } from "@/infrastructure/api/auth/login/login.api";
 
-export const authRepository: AuthRepository = {
-  login: loginApi,
-};
+export function createAuthRepository(httpClient: HttpClientPort): AuthRepository {
+  return {
+    login: createLoginApi(httpClient),
+  };
+}

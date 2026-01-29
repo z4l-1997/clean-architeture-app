@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { loginUseCase } from "@/application/use-cases/auth/login.use-case";
-import { authRepository } from "@/infrastructure/repositories/auth.impl";
-import { localStorageAdapter } from "@/infrastructure/storage/local-storage.adapter";
+import { executeLogin } from "@/infrastructure/di/auth.container";
 import { LoginFormState } from "@/presentation/views/login/types/login-form.types";
 
 export function useLogin() {
@@ -15,7 +13,7 @@ export function useLogin() {
     setLoading(true);
 
     try {
-      const token = await loginUseCase(authRepository, localStorageAdapter, data);
+      const token = await executeLogin(data);
       return token;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Login failed";
