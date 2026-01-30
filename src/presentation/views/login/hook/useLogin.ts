@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { executeLogin } from "@/infrastructure/di/auth.container";
+import { useAuthContext } from "@/presentation/providers/auth.provider";
 import { LoginFormState } from "@/presentation/views/login/types/login-form.types";
 
 export function useLogin() {
+  const { login: executeLogin } = useAuthContext();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
