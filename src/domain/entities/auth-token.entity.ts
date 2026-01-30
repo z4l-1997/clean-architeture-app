@@ -22,15 +22,5 @@ export const AuthTokenSchema = z.object({
   user: AuthUserSchema,
 });
 
-export const LoginResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  data: AuthTokenSchema,
-});
-
-export const RefreshResponseSchema = LoginResponseSchema;
-
 export type AuthUser = z.infer<typeof AuthUserSchema>;
 export type AuthTokenEntity = z.infer<typeof AuthTokenSchema>;
-export type LoginResponse = z.infer<typeof LoginResponseSchema>;
-export type RefreshResponse = z.infer<typeof RefreshResponseSchema>;

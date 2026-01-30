@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLogin } from "@/presentation/views/login/hook/useLogin";
 import {
   LoginFormState,
@@ -18,6 +19,7 @@ import {
 } from "@/presentation/components/ui/card";
 
 const LoginView = () => {
+  const router = useRouter();
   const [form, setForm] = useState<LoginFormState>(loginFormInitialState);
   const { login, error, loading } = useLogin();
 
@@ -28,8 +30,8 @@ const LoginView = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const result = await login(form);
-      console.log("Login success:", result);
+      await login(form);
+      router.push("/private/menu");
     } catch {
       // error đã được xử lý trong useLogin
     }

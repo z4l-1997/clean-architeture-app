@@ -1,8 +1,6 @@
 import { CookiePort } from "@/application/ports/cookie.port";
 import { AuthTokenEntity } from "@/domain/entities/auth-token.entity";
-import {
-  RefreshResponseSchema,
-} from "@/domain/entities/auth-token.entity";
+import { RefreshResponseSchema } from "@/infrastructure/api/auth/_schema/auth-response.schema";
 
 export const cookieAdapter: CookiePort = {
   async setRefreshToken(token: string): Promise<void> {
