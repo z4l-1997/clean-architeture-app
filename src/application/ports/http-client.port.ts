@@ -11,4 +11,5 @@ export type HttpClientPort = {
     url: string,
     options?: HttpRequestOptions<TBody>,
   ): Promise<TResponse>;
+  setOnUnauthorized(callback: () => Promise<void>): void;
 };

@@ -4,33 +4,65 @@ import {
 } from "@/application/ports/http-client.port";
 import { envConfig } from "@/infrastructure/config/env.config";
 import { StoragePort } from "@/application/ports/storage.port";
+import { STORAGE_KEYS } from "@/application/constants/storage-keys.constant";
 
-const ACCESS_TOKEN_KEY = "access_token";
+type HttpClientOptions = {
+  storage: StoragePort;
+  onUnauthorized?: () => Promise<void>;
+};
 
-export function createHttpClient(storage: StoragePort): HttpClientPort {
+export function createHttpClient(
+  storageOrOptions: StoragePort | HttpClientOptions,
+): HttpClientPort {
+  const options: HttpClientOptions =
+    "get" in storageOrOptions
+      ? { storage: storageOrOptions }
+      : storageOrOptions;
+
+  const { storage } = options;
+  let onUnauthorized = options.onUnauthorized;
+
   return {
+    setOnUnauthorized(callback: () => Promise<void>) {
+      onUnauthorized = callback;
+    },
+
     async request<TResponse, TBody = unknown>(
       url: string,
-      options?: HttpRequestOptions<TBody>,
+      requestOptions?: HttpRequestOptions<TBody>,
     ): Promise<TResponse> {
-      const method = options?.method ?? "GET";
-      const token = storage.get<string>(ACCESS_TOKEN_KEY);
+      const doFetch = async (): Promise<Response> => {
+        const method = requestOptions?.method ?? "GET";
+        const token = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
 
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...options?.headers,
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...requestOptions?.headers,
+        };
+
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        return fetch(`${envConfig.API_BASE_URL}${url}`, {
+          method,
+          headers,
+          body: requestOptions?.body
+            ? JSON.stringify(requestOptions.body)
+            : undefined,
+        });
       };
 
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
+      let response = await doFetch();
 
-      const response = await fetch(`${envConfig.API_BASE_URL}${url}`, {
-        method,
-        headers,
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-      });
+      if (response.status === 401 && onUnauthorized) {
+        const token = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
+        if (token) {
+          await onUnauthorized();
+          response = await doFetch();
+        }
+      }
 
       if (!response.ok) {
         throw new Error(`Request failed: ${response.status}`);

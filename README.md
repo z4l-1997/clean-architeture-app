@@ -19,14 +19,14 @@ app/             → imports presentation/
 
 ### Layers
 
-| Layer (inner → outer) | Role | Key Files |
-|---|---|---|
-| **Domain** (`domain/`) | Core business rules, entities, value objects, repository interfaces | `AuthTokenEntity`, `LoginEntity`, `EmailSchema`, `AuthRepository` |
-| **Application** (`application/`) | Use cases + port interfaces (abstractions for external services) | `loginUseCase`, `refreshUseCase`, `StoragePort`, `HttpClientPort` |
-| **Infrastructure** (`infrastructure/`) | Implements ports & repository interfaces with real adapters | `localStorageAdapter`, `cookieAdapter`, `httpClientAdapter`, `login.api` |
-| **DI** (`di/`) | Composition Root - wires all dependencies together | `container.ts`, `auth.container.ts` |
-| **Presentation** (`presentation/`) | React components, hooks, providers, views | `AuthProvider`, `useLogin`, `LoginView` |
-| **App** (`app/`) | Next.js App Router, pages, API routes | `layout.tsx`, `page.tsx`, `route.ts` |
+| Layer (inner → outer)                  | Role                                                                | Key Files                                                                |
+| -------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| **Domain** (`domain/`)                 | Core business rules, entities, value objects, repository interfaces | `AuthTokenEntity`, `LoginEntity`, `EmailSchema`, `AuthRepository`        |
+| **Application** (`application/`)       | Use cases + port interfaces (abstractions for external services)    | `loginUseCase`, `refreshUseCase`, `StoragePort`, `HttpClientPort`        |
+| **Infrastructure** (`infrastructure/`) | Implements ports & repository interfaces with real adapters         | `localStorageAdapter`, `cookieAdapter`, `httpClientAdapter`, `login.api` |
+| **DI** (`di/`)                         | Composition Root - wires all dependencies together                  | `container.ts`, `auth.container.ts`                                      |
+| **Presentation** (`presentation/`)     | React components, hooks, providers, views                           | `AuthProvider`, `useLogin`, `LoginView`                                  |
+| **App** (`app/`)                       | Next.js App Router, pages, API routes                               | `layout.tsx`, `page.tsx`, `route.ts`                                     |
 
 ### Folder Structure
 
