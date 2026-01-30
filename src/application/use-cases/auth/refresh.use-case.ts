@@ -12,6 +12,6 @@ export async function refreshUseCase(
 ) {
   const token = await repo.refresh(data);
   storage.set(STORAGE_KEYS.ACCESS_TOKEN, token.access_token);
-  await cookie.setRefreshToken(token.refresh_token);
+  await cookie.setTokens(token.refresh_token, token.access_token);
   return token;
 }

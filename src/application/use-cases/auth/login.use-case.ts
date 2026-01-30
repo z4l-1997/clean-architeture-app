@@ -16,7 +16,7 @@ export async function loginUseCase(
 ): Promise<LoginResultDto> {
   const token = await repo.login(data);
   storage.set(STORAGE_KEYS.ACCESS_TOKEN, token.access_token);
-  await cookie.setRefreshToken(token.refresh_token);
+  await cookie.setTokens(token.refresh_token, token.access_token);
 
   const { access_token, refresh_token, token_type, expires_in, ...result } = token;
 

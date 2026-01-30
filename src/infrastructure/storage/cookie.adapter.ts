@@ -3,15 +3,15 @@ import { AuthTokenEntity } from "@/domain/entities/auth-token.entity";
 import { RefreshResponseSchema } from "@/infrastructure/api/auth/_schema/auth-response.schema";
 
 export const cookieAdapter: CookiePort = {
-  async setRefreshToken(token: string): Promise<void> {
+  async setTokens(refreshToken: string, accessToken: string): Promise<void> {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: token }),
+      body: JSON.stringify({ refresh_token: refreshToken, access_token: accessToken }),
     });
 
     if (!res.ok) {
-      throw new Error("Failed to set refresh token cookie");
+      throw new Error("Failed to set token cookies");
     }
   },
 

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { getMaxAgeFromToken } from "../_utils/get-max-age-from-token";
 
 export async function POST(req: Request) {
-  const { refresh_token } = await req.json();
+  const { refresh_token, access_token } = await req.json();
 
   if (!refresh_token) {
     return Response.json(
@@ -11,9 +11,9 @@ export async function POST(req: Request) {
     );
   }
 
-  let maxAge: number;
+  let refreshMaxAge: number;
   try {
-    maxAge = getMaxAgeFromToken(refresh_token);
+    refreshMaxAge = getMaxAgeFromToken(refresh_token);
   } catch (error) {
     return Response.json(
       { success: false, message: (error as Error).message },
@@ -27,8 +27,23 @@ export async function POST(req: Request) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    maxAge,
+    maxAge: refreshMaxAge,
   });
+
+  if (access_token) {
+    try {
+      const accessMaxAge = getMaxAgeFromToken(access_token);
+      cookieStore.set("access_token", access_token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: accessMaxAge,
+      });
+    } catch {
+      // access_token invalid/expired — skip setting cookie
+    }
+  }
 
   return Response.json({ success: true });
 }

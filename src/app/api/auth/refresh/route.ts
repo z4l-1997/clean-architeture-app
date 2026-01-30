@@ -61,5 +61,21 @@ export async function POST(req: Request) {
     });
   }
 
+  const newAccessToken = data.data?.access_token;
+  if (newAccessToken) {
+    try {
+      const accessMaxAge = getMaxAgeFromToken(newAccessToken);
+      cookieStore.set("access_token", newAccessToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: accessMaxAge,
+      });
+    } catch {
+      // access_token invalid/expired — skip setting cookie
+    }
+  }
+
   return Response.json(data);
 }
