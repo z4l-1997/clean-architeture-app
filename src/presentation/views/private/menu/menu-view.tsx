@@ -3,6 +3,7 @@
 import React from "react";
 import { useMenu } from "./hook/useMenu";
 import { MonAnEntity } from "@/domain/entities/mon-an.entity";
+import { useAuthContext } from "@/presentation/providers/auth.provider";
 
 function MonAnCard({ monAn }: { monAn: MonAnEntity }) {
   const hasDiscount = monAn.giam_gia > 0;
@@ -40,6 +41,9 @@ function MonAnCard({ monAn }: { monAn: MonAnEntity }) {
 
 export default function MenuView() {
   const { data, loading, error, refetch } = useMenu();
+  const { userInfo } = useAuthContext();
+
+  console.log("userInfo", userInfo);
 
   if (loading) {
     return (

@@ -7,6 +7,7 @@ import type { AuthContainer } from "@/di/auth.container";
 type AuthContextType = {
   login: AuthContainer["executeLogin"];
   refresh: AuthContainer["executeRefresh"];
+  userInfo: AuthContainer["getCurrentUser"];
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -16,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       login: authContainer.executeLogin,
       refresh: authContainer.executeRefresh,
+      userInfo: authContainer.getCurrentUser,
     }),
     [],
   );

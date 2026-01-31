@@ -1,19 +1,25 @@
 import { cookies } from "next/headers";
 import { envConfig } from "@/infrastructure/config/env.config";
 import { getMaxAgeFromToken } from "../_utils/get-max-age-from-token";
+import { STORAGE_KEYS } from "../_constants/storage-keys.constant";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const baseCookieOptions = {
+  secure: isProduction,
+  sameSite: "strict" as const,
+  path: "/",
+};
 
 export async function POST(req: Request) {
   const { access_token } = await req.json();
 
   if (!access_token) {
-    return Response.json(
-      { success: false, message: "access_token is required" },
-      { status: 400 },
-    );
+    return Response.json({ success: false, message: "access_token is required" }, { status: 400 });
   }
 
   const cookieStore = await cookies();
-  const refreshToken = cookieStore.get("refresh_token")?.value;
+  const refreshToken = cookieStore.get(STORAGE_KEYS.REFRESH_TOKEN)?.value;
 
   if (!refreshToken) {
     return Response.json(
@@ -40,42 +46,35 @@ export async function POST(req: Request) {
 
   const data = await backendRes.json();
   const newRefreshToken = data.data?.refresh_token;
-
-  if (newRefreshToken) {
-    let maxAge: number;
-    try {
-      maxAge = getMaxAgeFromToken(newRefreshToken);
-    } catch (error) {
-      return Response.json(
-        { success: false, message: (error as Error).message },
-        { status: 502 },
-      );
-    }
-
-    cookieStore.set("refresh_token", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      path: "/",
-      maxAge,
-    });
-  }
-
   const newAccessToken = data.data?.access_token;
-  if (newAccessToken) {
-    try {
-      const accessMaxAge = getMaxAgeFromToken(newAccessToken);
-      cookieStore.set("access_token", newAccessToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        path: "/",
-        maxAge: accessMaxAge,
-      });
-    } catch {
-      // access_token invalid/expired — skip setting cookie
-    }
+
+  if (!newRefreshToken || !newAccessToken) {
+    return Response.json(
+      { success: false, message: "Invalid response from backend: missing tokens" },
+      { status: 502 },
+    );
   }
+
+  let refreshMaxAge: number;
+  let accessMaxAge: number;
+  try {
+    refreshMaxAge = getMaxAgeFromToken(newRefreshToken);
+    accessMaxAge = getMaxAgeFromToken(newAccessToken);
+  } catch (error) {
+    return Response.json({ success: false, message: (error as Error).message }, { status: 502 });
+  }
+
+  cookieStore.set(STORAGE_KEYS.REFRESH_TOKEN, newRefreshToken, {
+    ...baseCookieOptions,
+    httpOnly: true,
+    maxAge: refreshMaxAge,
+  });
+
+  cookieStore.set(STORAGE_KEYS.ACCESS_TOKEN, newAccessToken, {
+    ...baseCookieOptions,
+    httpOnly: true,
+    maxAge: accessMaxAge,
+  });
 
   return Response.json(data);
 }

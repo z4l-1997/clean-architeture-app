@@ -3,6 +3,18 @@ import { AuthTokenEntity } from "@/domain/entities/auth-token.entity";
 import { RefreshResponseSchema } from "@/infrastructure/api/auth/_schema/auth-response.schema";
 
 export const cookieAdapter: CookiePort = {
+  async getAccessToken(): Promise<string | null> {
+    const res = await fetch("/api/auth/token", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) return null;
+
+    const json = await res.json();
+    return json.access_token ?? null;
+  },
+
   async setTokens(refreshToken: string, accessToken: string): Promise<void> {
     const res = await fetch("/api/auth/login", {
       method: "POST",

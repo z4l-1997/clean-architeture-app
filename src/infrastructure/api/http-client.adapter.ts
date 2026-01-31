@@ -1,26 +1,29 @@
-import {
-  HttpClientPort,
-  HttpRequestOptions,
-} from "@/application/ports/http-client.port";
+import { HttpClientPort, HttpRequestOptions } from "@/application/ports/http-client.port";
 import { envConfig } from "@/infrastructure/config/env.config";
 import { StoragePort } from "@/application/ports/storage.port";
-import { STORAGE_KEYS } from "@/application/constants/storage-keys.constant";
+import { CookiePort } from "@/application/ports/cookie.port";
 
 type HttpClientOptions = {
   storage: StoragePort;
+  cookie: CookiePort;
   onUnauthorized?: () => Promise<void>;
 };
 
-export function createHttpClient(
-  storageOrOptions: StoragePort | HttpClientOptions,
-): HttpClientPort {
-  const options: HttpClientOptions =
-    "get" in storageOrOptions
-      ? { storage: storageOrOptions }
-      : storageOrOptions;
-
-  const { storage } = options;
+export function createHttpClient(options: HttpClientOptions): HttpClientPort {
+  const { cookie } = options;
   let onUnauthorized = options.onUnauthorized;
+  let cachedToken: string | null = null;
+
+  async function getToken(): Promise<string | null> {
+    if (!cachedToken) {
+      cachedToken = await cookie.getAccessToken();
+    }
+    return cachedToken;
+  }
+
+  function clearTokenCache() {
+    cachedToken = null;
+  }
 
   return {
     setOnUnauthorized(callback: () => Promise<void>) {
@@ -33,7 +36,7 @@ export function createHttpClient(
     ): Promise<TResponse> {
       const doFetch = async (): Promise<Response> => {
         const method = requestOptions?.method ?? "GET";
-        const token = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
+        const token = await getToken();
 
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -48,20 +51,17 @@ export function createHttpClient(
         return fetch(`${envConfig.API_BASE_URL}${url}`, {
           method,
           headers,
-          body: requestOptions?.body
-            ? JSON.stringify(requestOptions.body)
-            : undefined,
+          body: requestOptions?.body ? JSON.stringify(requestOptions.body) : undefined,
         });
       };
 
       let response = await doFetch();
 
       if (response.status === 401 && onUnauthorized) {
-        const token = storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN);
-        if (token) {
-          await onUnauthorized();
-          response = await doFetch();
-        }
+        clearTokenCache();
+        await onUnauthorized();
+        cachedToken = await cookie.getAccessToken();
+        response = await doFetch();
       }
 
       if (!response.ok) {
